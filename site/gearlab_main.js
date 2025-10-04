@@ -882,55 +882,6 @@
       return ctx.restore();
     };
 
-    GearLab.prototype.drawGearIndicators = function(ctx, gear) {
-      var arrowLength, arrowPoint, baseRadius, direction, head, indicatorRadius, maxRpm, normalizedRpm, offset, redArcEnd, redArcStart, sweep;
-      if (!gear) {
-        return;
-      }
-      maxRpm = Math.max(this.board.lastMaxRpm || 0, 1);
-      normalizedRpm = Math.min(Math.max(gear.rpm || 0, 0) / maxRpm, 1);
-      indicatorRadius = gear.pitchRadius + 18;
-      ctx.save();
-      ctx.translate(gear.location.x, gear.location.y);
-      ctx.lineCap = "round";
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = "rgba(229, 57, 53, 0.85)";
-      ctx.beginPath();
-      redArcStart = -0.5 * Math.PI;
-      redArcEnd = redArcStart + normalizedRpm * 2 * Math.PI;
-      ctx.arc(0, 0, indicatorRadius, redArcStart, redArcEnd, false);
-      ctx.stroke();
-      ctx.restore();
-      direction = gear.direction >= 0 ? 1 : -1;
-      ctx.save();
-      ctx.translate(gear.location.x, gear.location.y);
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "rgba(67, 160, 71, 0.9)";
-      sweep = 0.6 * Math.PI;
-      baseRadius = indicatorRadius + 10;
-      ctx.beginPath();
-      if (direction >= 0) {
-        ctx.arc(0, 0, baseRadius, -0.5 * Math.PI, -0.5 * Math.PI + sweep, false);
-        redArcEnd = -0.5 * Math.PI + sweep;
-      } else {
-        ctx.arc(0, 0, baseRadius, -0.5 * Math.PI, -0.5 * Math.PI - sweep, true);
-        redArcEnd = -0.5 * Math.PI - sweep;
-      }
-      ctx.stroke();
-      arrowLength = 12;
-      head = Point.polar(redArcEnd, baseRadius);
-      offset = direction >= 0 ? 1 : -1;
-      ctx.beginPath();
-      ctx.moveTo(head.x, head.y);
-      arrowPoint = head.minus(Point.polar(redArcEnd - offset * 0.4, arrowLength));
-      ctx.lineTo(arrowPoint.x, arrowPoint.y);
-      ctx.moveTo(head.x, head.y);
-      arrowPoint = head.minus(Point.polar(redArcEnd + offset * 0.4, arrowLength));
-      ctx.lineTo(arrowPoint.x, arrowPoint.y);
-      ctx.stroke();
-      return ctx.restore();
-    };
-
     GearLab.prototype.drawMomentum = function(ctx, gear, momentum, color) {
       var angle, head, headX, headY, length, p1, p2, pitchRadius, sign, top;
       if (color == null) {
@@ -1003,21 +954,27 @@
     };
 
     GearLab.prototype.draw = function() {
-      var buttonName, chain, ctx, gear, i, indicatorGears, shouldDrawChainsAndArrows, sortedGears, _i, _j, _k, _l, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      var arrow, arrowsToDraw, buttonName, chain, ctx, gear, i, momentum, shouldDrawChainsAndArrows, sortedGears, _i, _j, _k, _l, _len, _len1, _ref, _ref1, _ref2, _ref3;
       if (this.canvas.getContext != null) {
         this.updateCanvasSize();
         ctx = this.canvas.getContext("2d");
         ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         sortedGears = this.board.getGearsSortedByGroupAndLevel();
-        indicatorGears = [];
+        arrowsToDraw = [];
         for (i = _i = 0, _ref = sortedGears.length; 0 <= _ref ? _i < _ref : _i > _ref; i = 0 <= _ref ? ++_i : --_i) {
           gear = sortedGears[i];
+          momentum = gear.momentum;
           if (gear === this.selectedGear && this.goalLocationGear) {
             this.drawGear(ctx, gear, "grey");
+            if (momentum) {
+              arrowsToDraw.push([gear, momentum, "grey"]);
+            }
           } else {
             this.drawGear(ctx, gear);
+            if (momentum) {
+              arrowsToDraw.push([gear, momentum, "red"]);
+            }
           }
-          indicatorGears.push(gear);
           shouldDrawChainsAndArrows = (i === sortedGears.length - 1) || (this.board.getLevelScore(gear) !== this.board.getLevelScore(sortedGears[i + 1]));
           if (shouldDrawChainsAndArrows) {
             _ref1 = this.board.getChainsInGroupOnLevel(gear.group, gear.level);
@@ -1025,11 +982,11 @@
               chain = _ref1[_j];
               this.drawChain(ctx, chain);
             }
-            for (_k = 0, _len1 = indicatorGears.length; _k < _len1; _k++) {
-              gear = indicatorGears[_k];
-              this.drawGearIndicators(ctx, gear);
+            for (_k = 0, _len1 = arrowsToDraw.length; _k < _len1; _k++) {
+              arrow = arrowsToDraw[_k];
+              this.drawMomentum(ctx, arrow[0], arrow[1], arrow[2]);
             }
-            indicatorGears = [];
+            arrowsToDraw = [];
           }
         }
         if (this.goalLocationGear) {
