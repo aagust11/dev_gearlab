@@ -3,7 +3,7 @@
 # Licensed under the MIT license
 "use strict"
 
-window.gearsketch = {}
+window.gearlab = {}
 
 # ---------------------------
 # ---------- Point ----------
@@ -35,7 +35,7 @@ class Point
   @fromObject: (obj) ->
     new Point(obj.x, obj.y)
 
-window.gearsketch.Point = Point
+window.gearlab.Point = Point
 
 # ---------------------------
 # ------- ArcSegment --------
@@ -132,7 +132,7 @@ class ArcSegment
   @fromObject: (obj) ->
     new ArcSegment(Point.fromObject(obj.center), obj.radius, obj.startAngle, obj.endAngle, obj.direction)
 
-window.gearsketch.ArcSegment = ArcSegment
+window.gearlab.ArcSegment = ArcSegment
 
 # ---------------------------
 # ------- LineSegment -------
@@ -197,14 +197,14 @@ class LineSegment
   @fromObject: (obj) ->
     new LineSegment(Point.fromObject(obj.start), Point.fromObject(obj.end))
 
-window.gearsketch.LineSegment = LineSegment
+window.gearlab.LineSegment = LineSegment
 
 # ---------------------------
 # ---------- Util -----------
 # ---------------------------
 class Util
   # imports
-  Point = window.gearsketch.Point
+  Point = window.gearlab.Point
 
   # -- constants --
   @MODULE: 6
@@ -496,7 +496,7 @@ class Util
     request.onload = callback
     request.send(data)
 
-window.gearsketch.Util = Util
+window.gearlab.Util = Util
 
 # requestAnimationFrame polyfill
 # http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating

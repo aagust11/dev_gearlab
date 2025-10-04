@@ -4,12 +4,12 @@
 "use strict"
 
 # imports
-Point = window.gearsketch.Point
-ArcSegment = window.gearsketch.ArcSegment
-LineSegment = window.gearsketch.LineSegment
-Util = window.gearsketch.Util
+Point = window.gearlab.Point
+ArcSegment = window.gearlab.ArcSegment
+LineSegment = window.gearlab.LineSegment
+Util = window.gearlab.Util
 
-window.gearsketch.model = {}
+window.gearlab.model = {}
 
 # ---------------------------
 # ---------- Gear -----------
@@ -48,7 +48,7 @@ class Gear
     new Gear(Point.fromObject(obj.location), obj.rotation, obj.numberOfTeeth, obj.id,
       obj.momentum, obj.group, obj.level, obj.connections)
 
-window.gearsketch.model.Gear = Gear
+window.gearlab.model.Gear = Gear
 
 # ---------------------------
 # ---------- Chain ----------
@@ -423,7 +423,7 @@ class Chain
     chain.supportingGearIds = obj.supportingGearIds
     chain
 
-window.gearsketch.model.Chain = Chain
+window.gearlab.model.Chain = Chain
 
 # ---------------------------
 # ---------- Board ----------
@@ -920,4 +920,4 @@ class Board
       board.chains[id] = Chain.fromObject(chain)
     board
 
-window.gearsketch.model.Board = Board
+window.gearlab.model.Board = Board

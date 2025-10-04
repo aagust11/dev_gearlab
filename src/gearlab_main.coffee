@@ -10,13 +10,13 @@
 # - allow gears to overlap other gears' axes when the larger gear is on a higher level?
 
 # imports
-Point = window.gearsketch.Point
-ArcSegment = window.gearsketch.ArcSegment
-LineSegment = window.gearsketch.LineSegment
-Util = window.gearsketch.Util
-Gear = window.gearsketch.model.Gear
-Chain = window.gearsketch.model.Chain
-Board = window.gearsketch.model.Board
+Point = window.gearlab.Point
+ArcSegment = window.gearlab.ArcSegment
+LineSegment = window.gearlab.LineSegment
+Util = window.gearlab.Util
+Gear = window.gearlab.model.Gear
+Chain = window.gearlab.model.Chain
+Board = window.gearlab.model.Board
 
 # -- constants --
 FPS = 60
@@ -24,9 +24,9 @@ MIN_GEAR_TEETH = 8
 MIN_MOMENTUM = 0.2
 
 # ---------------------------
-# -------- GearSketch -------
+# -------- GearLab -------
 # ---------------------------
-class GearSketch
+class GearLab
   # -- imported constants --
   MODULE = Util.MODULE
   AXIS_RADIUS = Util.AXIS_RADIUS
@@ -82,7 +82,7 @@ class GearSketch
     @showButtons = showButtons
     @loadDemoPointer()
     @loadBoard()
-    @canvas = document.getElementById("gearsketch_canvas")
+    @canvas = document.getElementById("gearlab_canvas")
     @canvasOffsetX = @canvas.getBoundingClientRect().left
     @canvasOffsetY = @canvas.getBoundingClientRect().top
     @isDemoPlaying = false
@@ -828,4 +828,4 @@ class GearSketch
     boardJSON = JSON.stringify(@board)
     Util.sendPostRequest(boardJSON, "upload_board.php", ((event) => @boardUploaded(event)))
 
-window.gearsketch.GearSketch = GearSketch
+window.gearlab.GearLab = GearLab
