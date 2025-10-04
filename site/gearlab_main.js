@@ -114,6 +114,7 @@
       this.updateCanvasSize();
       this.addCanvasListeners();
       this.setupGearEditor();
+      this.setupBoardIO();
       this.lastUpdateTime = new Date().getTime();
       this.updateAndDraw();
     }
@@ -157,8 +158,8 @@
     };
 
     GearLab.prototype.loadBoard = function() {
-      var boardJSON, error, gear, hash, id, _ref, _results;
-      this.board = (function() {
+      var board, boardJSON, error, hash;
+      board = (function() {
         if (parent.location.hash.length > 1) {
           try {
             hash = parent.location.hash.substr(1);
@@ -173,14 +174,7 @@
           return new Board();
         }
       }).call(this);
-      _ref = this.board.getGears();
-      _results = [];
-      for (id in _ref) {
-        gear = _ref[id];
-        _results.push(this.addGearImage(gear));
-      }
-      this.board.recalculateGearSpeeds();
-      return _results;
+      return this.replaceBoard(board);
     };
 
     GearLab.prototype.displayMessage = function(message, color, time) {
@@ -468,7 +462,7 @@
             parent.location.hash = "";
             return this.board.clear();
           } else if (button.name === "cloudButton") {
-            return this.uploadBoard();
+            return this.downloadBoard();
           } else if (button.name === "helpButton") {
             return this.playDemo();
           }
@@ -1270,12 +1264,193 @@
     };
 
     GearLab.prototype.uploadBoard = function() {
-      var boardJSON,
+      return this.downloadBoard();
+    };
+
+    GearLab.prototype.setupBoardIO = function() {
+      var fileInput, importButton, saveButton,
+        _this = this;
+      saveButton = document.getElementById("download-board");
+      importButton = document.getElementById("import-board");
+      fileInput = document.getElementById("board-file-input");
+      if (!(saveButton && importButton && fileInput)) {
+        return;
+      }
+      saveButton.addEventListener("click", function() {
+        return _this.downloadBoard();
+      });
+      importButton.addEventListener("click", function() {
+        fileInput.value = "";
+        return fileInput.click();
+      });
+      return fileInput.addEventListener("change", function(event) {
+        return _this.handleBoardFileSelected(event);
+      });
+    };
+
+    GearLab.prototype.replaceBoard = function(board) {
+      var gear, id, _ref;
+      this.board = board;
+      this.board.recalculateGearSpeeds();
+      this.selectedGear = null;
+      this.goalLocationGear = null;
+      this.stroke = [];
+      this.gearImages = {};
+      _ref = this.board.getGears();
+      for (id in _ref) {
+        if (!__hasProp.call(_ref, id)) continue;
+        gear = _ref[id];
+        this.addGearImage(gear);
+      }
+      return this.update();
+    };
+
+    GearLab.prototype.handleBoardFileSelected = function(event) {
+      var file, files,
+        _this = this;
+      files = event.target.files;
+      if (!(files && files.length > 0)) {
+        return;
+      }
+      file = files[0];
+      return this.readBoardFile(file).then(function(boardJSON) {
+        var boardObject;
+        boardObject = Board.fromObject(JSON.parse(boardJSON));
+        parent.location.hash = "";
+        _this.replaceBoard(boardObject);
+        return _this.displayMessage("Board carregada correctament", "black", 3000);
+      })["catch"](function(error) {
+        console.error(error);
+        return _this.displayMessage("No s'ha pogut carregar el fitxer", "red", 4000);
+      });
+    };
+
+    GearLab.prototype.readBoardFile = function(file) {
+      var _this = this;
+      return new Promise(function(resolve, reject) {
+        var reader;
+        reader = new FileReader();
+        reader.onload = function(loadEvent) {
+          var password;
+          password = window.prompt("Introdueix la contrasenya utilitzada per desar el board:");
+          if (password === null) {
+            return reject(new Error("Import cancelled"));
+          }
+          if (password.length === 0) {
+            return reject(new Error("Empty password"));
+          }
+          return _this.decryptBoardData(loadEvent.target.result, password).then(function(decoded) {
+            return resolve(decoded);
+          })["catch"](function(error) {
+            return reject(error);
+          });
+        };
+        reader.onerror = function() {
+          return reject(new Error("File read error"));
+        };
+        return reader.readAsArrayBuffer(file);
+      });
+    };
+
+    GearLab.prototype.downloadBoard = function() {
+      var boardJSON, password,
         _this = this;
       boardJSON = JSON.stringify(this.board);
-      return Util.sendPostRequest(boardJSON, "upload_board.php", (function(event) {
-        return _this.boardUploaded(event);
-      }));
+      password = window.prompt("Introdueix una contrasenya per protegir el fitxer:");
+      if (password === null) {
+        return;
+      }
+      if (password.length === 0) {
+        this.displayMessage("Cal una contrasenya per desar el board", "red", 3000);
+        return;
+      }
+      return this.encryptBoardData(boardJSON, password).then(function(buffer) {
+        var blob, link;
+        blob = new Blob([buffer], {
+          type: "application/octet-stream"
+        });
+        link = document.createElement("a");
+        link.href = window.URL.createObjectURL(blob);
+        link.download = "gearlab-board.glb";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return _this.displayMessage("Board descarregat correctament", "black", 3000);
+      })["catch"](function(error) {
+        console.error(error);
+        return _this.displayMessage("No s'ha pogut desar el board", "red", 4000);
+      });
+    };
+
+    GearLab.prototype.encryptBoardData = function(plainText, password) {
+      var data, encoder, iv, salt;
+      if (!(window.crypto && window.crypto.subtle)) {
+        return Promise.reject(new Error("WebCrypto API not available"));
+      }
+      encoder = new TextEncoder();
+      data = encoder.encode(plainText);
+      salt = window.crypto.getRandomValues(new Uint8Array(16));
+      iv = window.crypto.getRandomValues(new Uint8Array(12));
+      return window.crypto.subtle.importKey("raw", encoder.encode(password), {
+        name: "PBKDF2"
+      }, false, ["deriveKey"]).then(function(keyMaterial) {
+        return window.crypto.subtle.deriveKey({
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 100000,
+          hash: "SHA-256"
+        }, keyMaterial, {
+          name: "AES-GCM",
+          length: 256
+        }, false, ["encrypt"]);
+      }).then(function(key) {
+        return window.crypto.subtle.encrypt({
+          name: "AES-GCM",
+          iv: iv
+        }, key, data);
+      }).then(function(cipherBuffer) {
+        var combined;
+        combined = new Uint8Array(salt.length + iv.length + cipherBuffer.byteLength);
+        combined.set(salt, 0);
+        combined.set(iv, salt.length);
+        combined.set(new Uint8Array(cipherBuffer), salt.length + iv.length);
+        return combined.buffer;
+      });
+    };
+
+    GearLab.prototype.decryptBoardData = function(buffer, password) {
+      var ciphertext, decoder, iv, passwordBytes, salt;
+      if (!(window.crypto && window.crypto.subtle)) {
+        return Promise.reject(new Error("WebCrypto API not available"));
+      }
+      if (!(buffer && buffer.byteLength > 28)) {
+        return Promise.reject(new Error("Invalid file"));
+      }
+      salt = new Uint8Array(buffer.slice(0, 16));
+      iv = new Uint8Array(buffer.slice(16, 28));
+      ciphertext = buffer.slice(28);
+      passwordBytes = new TextEncoder().encode(password);
+      decoder = new TextDecoder();
+      return window.crypto.subtle.importKey("raw", passwordBytes, {
+        name: "PBKDF2"
+      }, false, ["deriveKey"]).then(function(keyMaterial) {
+        return window.crypto.subtle.deriveKey({
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 100000,
+          hash: "SHA-256"
+        }, keyMaterial, {
+          name: "AES-GCM",
+          length: 256
+        }, false, ["decrypt"]);
+      }).then(function(key) {
+        return window.crypto.subtle.decrypt({
+          name: "AES-GCM",
+          iv: iv
+        }, key, ciphertext);
+      }).then(function(plainBuffer) {
+        return decoder.decode(plainBuffer);
+      });
     };
 
     return GearLab;
