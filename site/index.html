@@ -37,6 +37,38 @@ Demo hand icon by momentum (http://momentumdesignlab.com/)
             overflow: hidden;
         }
 
+        .board-actions {
+            position: absolute;
+            top: 18px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 15;
+        }
+
+        .board-actions button {
+            border: none;
+            background: rgba(15, 23, 42, 0.85);
+            color: #f8fafc;
+            font-weight: 600;
+            font-size: 13px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.35);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .board-actions button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 22px rgba(15, 23, 42, 0.35);
+        }
+
+        .board-actions button:active {
+            transform: translateY(0);
+            box-shadow: 0 6px 12px rgba(15, 23, 42, 0.3);
+        }
+
         #gearlab_canvas {
             width: 100%;
             height: 100%;
@@ -200,6 +232,11 @@ Demo hand icon by momentum (http://momentumdesignlab.com/)
 <body onload="new window.gearlab.GearLab();">
     <div class="app-shell">
         <div class="canvas-wrapper">
+            <div class="board-actions">
+                <button id="download-board" type="button">Descarregar board</button>
+                <button id="import-board" type="button">Carregar board</button>
+                <input id="board-file-input" type="file" accept=".glb,.gearlab,.json,.bin" hidden />
+            </div>
             <canvas id="gearlab_canvas"></canvas>
             <div id="gear-editor" class="gear-editor hidden">
                 <div class="gear-editor-row">
