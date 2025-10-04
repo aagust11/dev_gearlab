@@ -94,7 +94,7 @@
 
     function GearLab(showButtons) {
       if (showButtons == null) {
-        showButtons = true;
+        showButtons = false;
       }
       this.handleDocumentClick = __bind(this.handleDocumentClick, this);
       this.handleGearModeChange = __bind(this.handleGearModeChange, this);
@@ -452,19 +452,13 @@
           this.hideGearEditor();
           this.pendingGearEditor = null;
           if (button.name === "playButton") {
-            this.isPlaying = true;
-            if (this.board.getGearList().every(function(g) {
-              return g.momentum === 0;
-            })) {
-              return this.displayMessage("Add some arrows!", "black", 2000);
-            }
+            return this.startSimulation();
           } else if (button.name === "clearButton") {
-            parent.location.hash = "";
-            return this.board.clear();
+            return this.createBlankBoard();
           } else if (button.name === "cloudButton") {
             return this.downloadBoard();
           } else if (button.name === "helpButton") {
-            return this.playDemo();
+            return this.toggleDemoPlayback();
           }
         } else {
           _ref = this.gearAt(x, y), gear = _ref.gear, selection = _ref.selection;
@@ -1001,7 +995,7 @@
           ctx.stroke();
           ctx.restore();
         }
-        if (this.areButtonsLoaded && this.shouldShowButtons()) {
+        if (this.areButtonsLoaded && this.showButtons) {
           _ref3 = this.buttons;
           for (buttonName in _ref3) {
             if (!__hasProp.call(_ref3, buttonName)) continue;
@@ -1238,6 +1232,40 @@
       }
     };
 
+    GearLab.prototype.startSimulation = function() {
+      if (this.isDemoPlaying) {
+        this.stopDemo();
+      }
+      this.isPlaying = true;
+      if (this.board.getGearList().every(function(g) {
+        return g.momentum === 0;
+      })) {
+        return this.displayMessage("Add some arrows!", "black", 2000);
+      } else {
+        return this.displayMessage("Simulació en marxa", "black", 2000);
+      }
+    };
+
+    GearLab.prototype.createBlankBoard = function() {
+      if (this.isDemoPlaying) {
+        this.stopDemo();
+      }
+      this.isPlaying = false;
+      parent.location.hash = "";
+      this.board.clear();
+      return this.displayMessage("S'ha creat un board en blanc", "black", 3000);
+    };
+
+    GearLab.prototype.toggleDemoPlayback = function() {
+      if (this.isDemoPlaying) {
+        this.stopDemo();
+        return this.displayMessage("Demo aturada", "black", 2000);
+      } else {
+        this.isPlaying = false;
+        return this.playDemo();
+      }
+    };
+
     GearLab.prototype.playDemo = function() {
       this.loadDemoMovements();
       this.boardBackup = this.board.clone();
@@ -1268,20 +1296,36 @@
     };
 
     GearLab.prototype.setupBoardIO = function() {
-      var fileInput, importButton, saveButton,
+      var demoButton, fileInput, importButton, newButton, playButton, saveButton,
         _this = this;
       saveButton = document.getElementById("download-board");
       importButton = document.getElementById("import-board");
       fileInput = document.getElementById("board-file-input");
-      if (!(saveButton && importButton && fileInput)) {
+      newButton = document.getElementById("new-board");
+      playButton = document.getElementById("start-simulation");
+      demoButton = document.getElementById("start-demo");
+      if (!(saveButton && importButton && fileInput && newButton && playButton && demoButton)) {
         return;
       }
+      newButton.addEventListener("click", function() {
+        return _this.createBlankBoard();
+      });
       saveButton.addEventListener("click", function() {
         return _this.downloadBoard();
       });
       importButton.addEventListener("click", function() {
+        _this.isPlaying = false;
+        if (_this.isDemoPlaying) {
+          _this.stopDemo();
+        }
         fileInput.value = "";
         return fileInput.click();
+      });
+      playButton.addEventListener("click", function() {
+        return _this.startSimulation();
+      });
+      demoButton.addEventListener("click", function() {
+        return _this.toggleDemoPlayback();
       });
       return fileInput.addEventListener("change", function(event) {
         return _this.handleBoardFileSelected(event);
@@ -1317,6 +1361,10 @@
         var boardObject;
         boardObject = Board.fromObject(JSON.parse(boardJSON));
         parent.location.hash = "";
+        _this.isPlaying = false;
+        if (_this.isDemoPlaying) {
+          _this.stopDemo();
+        }
         _this.replaceBoard(boardObject);
         return _this.displayMessage("Board carregada correctament", "black", 3000);
       })["catch"](function(error) {
