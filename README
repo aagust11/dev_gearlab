@@ -1,5 +1,5 @@
-GearSketch sandbox in CoffeeScript.
+GearLab sandbox in CoffeeScript.
 
-GearSketch lets you easily draw, connect and animate gears and chains. Best used with a touchscreen device.
+GearLab lets you draw, connect and animate gears and chains with interactive speed controls.
 
-Check it out at http://gearsket.ch
+Check it out at https://gearlab.app

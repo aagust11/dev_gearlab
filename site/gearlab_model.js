@@ -5,18 +5,18 @@
     __hasProp = {}.hasOwnProperty,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-  Point = window.gearsketch.Point;
+  Point = window.gearlab.Point;
 
-  ArcSegment = window.gearsketch.ArcSegment;
+  ArcSegment = window.gearlab.ArcSegment;
 
-  LineSegment = window.gearsketch.LineSegment;
+  LineSegment = window.gearlab.LineSegment;
 
-  Util = window.gearsketch.Util;
+  Util = window.gearlab.Util;
 
-  window.gearsketch.model = {};
+  window.gearlab.model = {};
 
   Gear = (function() {
-    function Gear(location, rotation, numberOfTeeth, id, momentum, group, level, connections) {
+    function Gear(location, rotation, numberOfTeeth, id, momentum, group, level, connections, rpm, direction, isDriver) {
       this.location = location;
       this.rotation = rotation;
       this.numberOfTeeth = numberOfTeeth;
@@ -28,10 +28,50 @@
       if (this.id == null) {
         this.id = Util.createUUID();
       }
+      this.direction = direction != null ? direction : (this.momentum >= 0 ? 1 : -1);
+      this.rpm = rpm != null ? rpm : Math.abs(this.momentum) * 60 / (2 * Math.PI);
+      this.isDriver = isDriver != null ? isDriver : this.momentum !== 0;
+      this.updateDimensions();
+      this.normalizeMotion();
+    }
+
+    Gear.prototype.normalizeMotion = function() {
+      var radiansPerSecond;
+      if (isNaN(this.rpm) || !isFinite(this.rpm)) {
+        this.rpm = 0;
+      }
+      this.rpm = Math.round(this.rpm * 100) / 100;
+      this.direction = this.direction === -1 ? -1 : 1;
+      radiansPerSecond = this.rpm * 2 * Math.PI / 60;
+      if (!isFinite(radiansPerSecond)) {
+        radiansPerSecond = 0;
+      }
+      return this.momentum = radiansPerSecond * this.direction;
+    };
+
+    Gear.prototype.updateDimensions = function() {
       this.pitchRadius = Util.MODULE * (0.5 * this.numberOfTeeth);
       this.innerRadius = Util.MODULE * (0.5 * this.numberOfTeeth - 1.25);
-      this.outerRadius = Util.MODULE * (0.5 * this.numberOfTeeth + 1);
-    }
+      return this.outerRadius = Util.MODULE * (0.5 * this.numberOfTeeth + 1);
+    };
+
+    Gear.prototype.setNumberOfTeeth = function(numberOfTeeth) {
+      this.numberOfTeeth = numberOfTeeth;
+      return this.updateDimensions();
+    };
+
+    Gear.prototype.updateMotion = function(rpm, direction, isDriver) {
+      if (rpm != null) {
+        this.rpm = rpm;
+      }
+      if (direction != null) {
+        this.direction = direction;
+      }
+      if (isDriver != null) {
+        this.isDriver = isDriver;
+      }
+      return this.normalizeMotion();
+    };
 
     Gear.prototype.getCircumference = function() {
       return 2 * Math.PI * this.pitchRadius;
@@ -51,24 +91,29 @@
       this.location = gear.location;
       this.rotation = gear.rotation;
       this.momentum = gear.momentum;
+      this.rpm = gear.rpm;
+      this.direction = gear.direction;
+      this.isDriver = gear.isDriver;
+      this.updateDimensions();
       this.group = gear.group;
       this.level = gear.level;
-      return this.connections = gear.connections;
+      this.connections = gear.connections;
+      return this.normalizeMotion();
     };
 
     Gear.prototype.clone = function() {
-      return new Gear(this.location.clone(), this.rotation, this.numberOfTeeth, this.id, this.momentum, this.group, this.level, Util.clone(this.connections));
+      return new Gear(this.location.clone(), this.rotation, this.numberOfTeeth, this.id, this.momentum, this.group, this.level, Util.clone(this.connections), this.rpm, this.direction, this.isDriver);
     };
 
     Gear.fromObject = function(obj) {
-      return new Gear(Point.fromObject(obj.location), obj.rotation, obj.numberOfTeeth, obj.id, obj.momentum, obj.group, obj.level, obj.connections);
+      return new Gear(Point.fromObject(obj.location), obj.rotation, obj.numberOfTeeth, obj.id, obj.momentum, obj.group, obj.level, obj.connections, obj.rpm, obj.direction, obj.isDriver);
     };
 
     return Gear;
 
   })();
 
-  window.gearsketch.model.Gear = Gear;
+  window.gearlab.model.Gear = Gear;
 
   Chain = (function() {
     Chain.WIDTH = 8;
@@ -646,7 +691,7 @@
 
   })();
 
-  window.gearsketch.model.Chain = Chain;
+  window.gearlab.model.Chain = Chain;
 
   Board = (function() {
     var AXIS_RADIUS, ConnectionType, EPSILON, MIN_STACKED_GEARS_TEETH_DIFFERENCE, MODULE, SNAPPING_DISTANCE;
@@ -672,6 +717,7 @@
     function Board(gears, chains) {
       this.gears = gears != null ? gears : {};
       this.chains = chains != null ? chains : {};
+      this.lastMaxRpm = 0;
     }
 
     Board.prototype.restore = function(board) {
@@ -682,17 +728,21 @@
         gear = _ref[id];
         gear.restore(board.gears[id]);
       }
-      return this.chains = board.chains;
+      this.chains = board.chains;
+      return this.recalculateGearSpeeds();
     };
 
     Board.prototype.restoreAfterDemo = function(board) {
       this.gears = board.gears;
-      return this.chains = board.chains;
+      this.chains = board.chains;
+      return this.recalculateGearSpeeds();
     };
 
     Board.prototype.clear = function() {
       this.gears = {};
-      return this.chains = {};
+      this.chains = {};
+      this.lastMaxRpm = 0;
+      return this;
     };
 
     Board.prototype.getNextGroup = function() {
@@ -1244,6 +1294,7 @@
         this.restore(oldBoard);
         return false;
       } else {
+        this.recalculateGearSpeeds();
         return true;
       }
     };
@@ -1251,7 +1302,8 @@
     Board.prototype.removeGear = function(gear) {
       this.removeAllConnections(gear);
       delete this.gears[gear.id];
-      return this.removeGearFromChains(gear);
+      this.removeGearFromChains(gear);
+      return this.recalculateGearSpeeds();
     };
 
     Board.prototype.getGearAt = function(location, candidates) {
@@ -1335,6 +1387,90 @@
       return _results;
     };
 
+    Board.prototype.recalculateGearSpeeds = function() {
+      var angularVelocities, chainId, connectionType, currentId, currentVelocity, direction, gear, id, neighborConnections, neighborId, queue, ratio, radiansPerSecond, turningObject, turningObjects, visited, _ref, _ref1, _results;
+      turningObjects = this.getTurningObjects();
+      angularVelocities = {};
+      queue = [];
+      _ref = this.gears;
+      for (id in _ref) {
+        if (!__hasProp.call(_ref, id)) continue;
+        gear = _ref[id];
+        if (gear.isDriver && (gear.rpm != null)) {
+          gear.updateMotion(gear.rpm, gear.direction, gear.isDriver);
+          angularVelocities[id] = gear.momentum;
+          queue.push(id);
+        } else {
+          if (!gear.isDriver) {
+            gear.updateMotion(0, gear.direction, gear.isDriver);
+          } else {
+            gear.updateMotion(gear.rpm, gear.direction, gear.isDriver);
+          }
+          angularVelocities[id] = null;
+        }
+      }
+      _ref1 = this.chains;
+      for (chainId in _ref1) {
+        if (!__hasProp.call(_ref1, chainId)) continue;
+        angularVelocities[chainId] = null;
+      }
+      visited = {};
+      while (queue.length > 0) {
+        currentId = queue.shift();
+        currentVelocity = angularVelocities[currentId];
+        visited[currentId] = true;
+        turningObject = turningObjects[currentId];
+        if (!(turningObject != null) || currentVelocity == null) {
+          continue;
+        }
+        neighborConnections = turningObject.connections;
+        for (neighborId in neighborConnections) {
+          if (!__hasProp.call(neighborConnections, neighborId)) continue;
+          if (angularVelocities[neighborId] != null) {
+            continue;
+          }
+          ratio = this.calculateRatio(turningObject, turningObjects[neighborId], neighborConnections[neighborId]);
+          if (!(turningObjects[neighborId] != null)) {
+            continue;
+          }
+          angularVelocities[neighborId] = currentVelocity * ratio;
+          queue.push(neighborId);
+        }
+      }
+      this.lastMaxRpm = 0;
+      _results = [];
+      for (id in angularVelocities) {
+        if (!__hasProp.call(angularVelocities, id)) continue;
+        currentVelocity = angularVelocities[id];
+        turningObject = turningObjects[id];
+        if (turningObject instanceof Gear) {
+          if (currentVelocity == null) {
+            if (!turningObject.isDriver) {
+              _results.push(turningObject.updateMotion(0, 1, turningObject.isDriver));
+            } else {
+              _results.push(void 0);
+            }
+          } else {
+            direction = currentVelocity >= 0 ? 1 : -1;
+            radiansPerSecond = Math.abs(currentVelocity);
+            turningObject.updateMotion(radiansPerSecond * 60 / (2 * Math.PI), direction, turningObject.isDriver);
+            this.lastMaxRpm = Math.max(this.lastMaxRpm, turningObject.rpm);
+            _results.push(void 0);
+          }
+        } else if (turningObject instanceof Chain) {
+          if (currentVelocity == null) {
+            turningObject.angularVelocity = 0;
+          } else {
+            turningObject.angularVelocity = currentVelocity;
+          }
+          _results.push(void 0);
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
     Board.prototype.addChainConnections = function(chain) {
       var gearId, _i, _len, _ref, _results;
       _ref = chain.supportingGearIds;
@@ -1367,6 +1503,7 @@
         return false;
       }
       if (this.isBoardValid()) {
+        this.recalculateGearSpeeds();
         return true;
       } else {
         this.restore(oldBoard);
@@ -1376,7 +1513,8 @@
 
     Board.prototype.removeChain = function(chain) {
       this.removeAllConnections(chain);
-      return delete this.chains[chain.id];
+      delete this.chains[chain.id];
+      return this.recalculateGearSpeeds();
     };
 
     Board.prototype.getChains = function() {
@@ -1435,6 +1573,7 @@
         chain = _ref1[id];
         board.chains[id] = Chain.fromObject(chain);
       }
+      board.recalculateGearSpeeds();
       return board;
     };
 
@@ -1442,10 +1581,10 @@
 
   })();
 
-  window.gearsketch.model.Board = Board;
+  window.gearlab.model.Board = Board;
 
 }).call(this);
 
 /*
-//@ sourceMappingURL=gearsketch_model.map
+//@ sourceMappingURL=gearlab_model.map
 */
