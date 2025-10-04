@@ -6,7 +6,7 @@
     __hasProp = {}.hasOwnProperty,
     __slice = [].slice;
 
-  window.gearsketch = {};
+  window.gearlab = {};
 
   Point = (function() {
     function Point(x, y) {
@@ -50,7 +50,7 @@
 
   })();
 
-  window.gearsketch.Point = Point;
+  window.gearlab.Point = Point;
 
   ArcSegment = (function() {
     function ArcSegment(center, radius, startAngle, endAngle, direction) {
@@ -163,7 +163,7 @@
 
   })();
 
-  window.gearsketch.ArcSegment = ArcSegment;
+  window.gearlab.ArcSegment = ArcSegment;
 
   LineSegment = (function() {
     function LineSegment(start, end) {
@@ -242,12 +242,12 @@
 
   })();
 
-  window.gearsketch.LineSegment = LineSegment;
+  window.gearlab.LineSegment = LineSegment;
 
   Util = (function() {
     function Util() {}
 
-    Point = window.gearsketch.Point;
+    Point = window.gearlab.Point;
 
     Util.MODULE = 6;
 
@@ -669,7 +669,7 @@
 
   })();
 
-  window.gearsketch.Util = Util;
+  window.gearlab.Util = Util;
 
   (function() {
     var lastTime, vendor, vendors, _i, _len;
@@ -723,5 +723,5 @@
 }).call(this);
 
 /*
-//@ sourceMappingURL=gearsketch_util.map
+//@ sourceMappingURL=gearlab_util.map
 */

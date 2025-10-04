@@ -1,6 +1,6 @@
 <!--
 By Frank Leenaars, Department of Instructional Technology, University of Twente
-Source code at https://github.com/frankleenaars/gearsketch
+Source code at https://github.com/frankleenaars/gearlab
 Licensed under the MIT license
 
 Demo hand icon by momentum (http://momentumdesignlab.com/)
@@ -9,17 +9,239 @@ Demo hand icon by momentum (http://momentumdesignlab.com/)
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>GearSketch</title>
+    <title>GearLab</title>
     <link rel="icon" type="image/png" href="img/Gear.png">
     <script type="text/javascript" src="hammer.min.js"></script>
-    <script type="text/javascript" src="gearsketch_util.js"></script>
-    <script type="text/javascript" src="gearsketch_model.js"></script>
-    <script type="text/javascript" src="gearsketch_main.js"></script>
+    <script type="text/javascript" src="gearlab_util.js"></script>
+    <script type="text/javascript" src="gearlab_model.js"></script>
+    <script type="text/javascript" src="gearlab_main.js"></script>
     <style type="text/css">
-        body, html {margin: 0; height: 100%; overflow: hidden;}
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: "Inter", "Segoe UI", sans-serif;
+            background: #f4f6fb;
+            color: #1f2937;
+            overflow: hidden;
+        }
+
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        #gearlab_canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .gear-editor {
+            position: absolute;
+            min-width: 220px;
+            background: rgba(255, 255, 255, 0.96);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(15, 23, 42, 0.18);
+            padding: 16px 20px;
+            pointer-events: auto;
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            z-index: 10;
+        }
+
+        .gear-editor.hidden {
+            display: none;
+        }
+
+        .gear-editor h3 {
+            margin: 0 0 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .gear-editor-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .gear-editor-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .gear-editor-row label,
+        .gear-editor-row span {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .gear-editor-row input[type="number"] {
+            width: 80px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            border: 1px solid #cbd5f5;
+            background: #f8fafc;
+            font-size: 13px;
+            color: #0f172a;
+        }
+
+        .gear-editor-row input[type="number"]:disabled {
+            opacity: 0.6;
+            background: #e2e8f0;
+            cursor: not-allowed;
+        }
+
+        .direction-toggle {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .direction-toggle input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .toggle-track {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            padding: 4px 14px;
+            font-size: 14px;
+            position: relative;
+            color: #334155;
+        }
+
+        .toggle-option {
+            font-weight: 600;
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #34d399;
+            top: 50%;
+            transform: translate(-90%, -50%);
+            transition: transform 0.2s ease;
+            box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+        }
+
+        .direction-toggle input:checked + .toggle-track .toggle-thumb {
+            transform: translate(50%, -50%);
+            background: #3b82f6;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.45);
+        }
+
+        .gear-editor-mode {
+            gap: 18px;
+        }
+
+        .gear-editor-mode label {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        .gear-editor-mode input[type="radio"] {
+            accent-color: #2563eb;
+        }
+
+        .site-footer {
+            text-align: center;
+            font-size: 12px;
+            padding: 18px 16px;
+            color: #1f2937;
+            background: rgba(148, 163, 184, 0.18);
+        }
+
+        .footer-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-meta {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3cm;
+            flex-wrap: wrap;
+        }
+
+        .footer-icons {
+            display: inline-flex;
+            gap: 8px;
+        }
+
+        .footer-icons img {
+            height: 24px;
+        }
     </style>
 </head>
-<body onload="new window.gearsketch.GearSketch();">
-    <canvas id="gearsketch_canvas"></canvas>
+<body onload="new window.gearlab.GearLab();">
+    <div class="app-shell">
+        <div class="canvas-wrapper">
+            <canvas id="gearlab_canvas"></canvas>
+            <div id="gear-editor" class="gear-editor hidden">
+                <div class="gear-editor-row">
+                    <label for="gear-editor-teeth">Nombre de dents</label>
+                    <input id="gear-editor-teeth" type="number" min="8" />
+                </div>
+                <div class="gear-editor-row">
+                    <label for="gear-editor-rpm">RPM</label>
+                    <input id="gear-editor-rpm" type="number" min="0" step="0.01" />
+                </div>
+                <div class="gear-editor-row gear-editor-toggle">
+                    <span>Sentit de gir</span>
+                    <label class="direction-toggle">
+                        <input id="gear-editor-direction" type="checkbox" />
+                        <span class="toggle-track">
+                            <span class="toggle-option">←</span>
+                            <span class="toggle-thumb"></span>
+                            <span class="toggle-option">→</span>
+                        </span>
+                    </label>
+                </div>
+                <div class="gear-editor-row gear-editor-mode">
+                    <span>Mode</span>
+                    <label for="gear-editor-mode-driver"><input type="radio" name="gear-mode" id="gear-editor-mode-driver" value="driver" /> Motriu</label>
+                    <label for="gear-editor-mode-driven"><input type="radio" name="gear-mode" id="gear-editor-mode-driven" value="driven" /> Conduïda</label>
+                </div>
+            </div>
+        </div>
+        <footer class="site-footer">
+            <div class="wrap footer-inner">
+                <div data-i18n="footer.license" data-i18n-type="html">Generador Aleatori d'Exàmens © 2025 per <a href="mailto:aagust11@xtec.cat">aagust11@xtec.cat</a> amb l'assistència de la IA està llicenciat sota <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</div>
+                <div class="footer-meta">
+                    <div data-i18n="footer.version">Versió 1 · Octubre 2025</div>
+                    <div class="footer-icons">
+                        <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="Creative Commons" />
+                        <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="Reconeixement" />
+                        <img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" alt="No Comercial" />
+                        <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" alt="Compartir Igual" />
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
 </body>
 </html>
