@@ -71,6 +71,7 @@ class GearLab
 
   # usage demo
   pointerLocation: new Point()
+  pointerIcons: {}
   currentDemoMovement: 0
   movementCompletion: 0
   restTimer: 0
@@ -109,9 +110,43 @@ class GearLab
       x += 80
 
   loadDemoPointer: ->
-    image = new Image()
-    image.onload = => @pointerImage = image
-    image.src = "img/hand.png"
+    @pointerIcons =
+      hand: null
+      handGrab: null
+
+    loadIcon = (key, svgMarkup) =>
+      image = new Image()
+      image.onload = =>
+        @pointerIcons[key] = image
+        if key is "hand"
+          if not @isPenDown or not @pointerImage?
+            @pointerImage = image
+        else if key is "handGrab" and @isPenDown
+          @pointerImage = image
+      image.src = "data:image/svg+xml;utf8," + encodeURIComponent(svgMarkup.trim())
+
+    loadIcon("hand", @createLucideHandSvg())
+    loadIcon("handGrab", @createLucideHandGrabSvg())
+
+  createLucideHandSvg: ->
+    """
+    <svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='#0f172a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>
+      <path d='M5 11v2a7 7 0 0 0 14 0v-6a1.5 1.5 0 0 0-3 0v5'/>
+      <path d='M12 13V4a1.5 1.5 0 0 1 3 0v7'/>
+      <path d='M9 13V6a1.5 1.5 0 0 1 3 0'/>
+      <path d='M6 13V7a1.5 1.5 0 0 1 3 0'/>
+    </svg>
+    """
+
+  createLucideHandGrabSvg: ->
+    """
+    <svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='#0f172a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>
+      <path d='M6.5 12.5V8.2a1.8 1.8 0 1 1 3.6 0v3.3'/>
+      <path d='M10.1 11.5V7.5a1.8 1.8 0 1 1 3.6 0v4'/>
+      <path d='M13.7 11V8.7a1.8 1.8 0 1 1 3.6 0v3.3'/>
+      <path d='M5 12.5v1a7 7 0 0 0 14 0v-1.7a1.8 1.8 0 1 0-3.6 0'/>
+    </svg>
+    """
 
   loadBoard: ->
     @board =
@@ -167,6 +202,8 @@ class GearLab
       @handlePenUp()
 
   handlePenDown: (x, y) ->
+    if @pointerIcons?.handGrab?
+      @pointerImage = @pointerIcons.handGrab
     point = new Point(x, y)
     if @isPenDown
       # pen released outside of canvas
@@ -221,6 +258,8 @@ class GearLab
         @stroke.push(point)
 
   handlePenUp: ->
+    if @pointerIcons?.hand?
+      @pointerImage = @pointerIcons.hand
     if @isPenDown
       if @currentAction is Action.SETTING_MOMENTUM
         if Math.abs(@selectedGearMomentum) > MIN_MOMENTUM
@@ -810,6 +849,8 @@ class GearLab
     @movementCompletion = 0
     @isDemoPlaying = true
     @displayMessage("click anywhere to stop the demo")
+    if @pointerIcons?.hand?
+      @pointerImage = @pointerIcons.hand
 
   stopDemo: ->
     @isDemoPlaying = false
@@ -819,6 +860,8 @@ class GearLab
     @selectedIcon = "gearIcon"
     @board.restoreAfterDemo(@boardBackup)
     @clearMessage()
+    if @pointerIcons?.hand?
+      @pointerImage = @pointerIcons.hand
 
   boardUploaded: (event) ->
     parent.location.hash = event.target.responseText.trim()

@@ -2395,6 +2395,8 @@
 
     GearLab.prototype.pointerLocation = new Point();
 
+    GearLab.prototype.pointerIcons = {};
+
     GearLab.prototype.currentDemoMovement = 0;
 
     GearLab.prototype.movementCompletion = 0;
@@ -2465,13 +2467,37 @@
     };
 
     GearLab.prototype.loadDemoPointer = function() {
-      var image,
+      var loadIcon,
         _this = this;
-      image = new Image();
-      image.onload = function() {
-        return _this.pointerImage = image;
+      this.pointerIcons = {
+        hand: null,
+        handGrab: null
       };
-      return image.src = "img/hand.png";
+      loadIcon = function(key, svgMarkup) {
+        var image;
+        image = new Image();
+        image.onload = function() {
+          _this.pointerIcons[key] = image;
+          if (key === "hand") {
+            if (!_this.isPenDown || !_this.pointerImage) {
+              return _this.pointerImage = image;
+            }
+          } else if (key === "handGrab" && _this.isPenDown) {
+            return _this.pointerImage = image;
+          }
+        };
+        return image.src = "data:image/svg+xml;utf8," + encodeURIComponent(svgMarkup.trim());
+      };
+      loadIcon("hand", this.createLucideHandSvg());
+      return loadIcon("handGrab", this.createLucideHandGrabSvg());
+    };
+
+    GearLab.prototype.createLucideHandSvg = function() {
+      return "\n    <svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='#0f172a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>\n      <path d='M5 11v2a7 7 0 0 0 14 0v-6a1.5 1.5 0 0 0-3 0v5'/>\n      <path d='M12 13V4a1.5 1.5 0 0 1 3 0v7'/>\n      <path d='M9 13V6a1.5 1.5 0 0 1 3 0'/>\n      <path d='M6 13V7a1.5 1.5 0 0 1 3 0'/>\n    </svg>\n    ";
+    };
+
+    GearLab.prototype.createLucideHandGrabSvg = function() {
+      return "\n    <svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24' fill='none' stroke='#0f172a' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'>\n      <path d='M6.5 12.5V8.2a1.8 1.8 0 1 1 3.6 0v3.3'/>\n      <path d='M10.1 11.5V7.5a1.8 1.8 0 1 1 3.6 0v4'/>\n      <path d='M13.7 11V8.7a1.8 1.8 0 1 1 3.6 0v3.3'/>\n      <path d='M5 12.5v1a7 7 0 0 0 14 0v-1.7a1.8 1.8 0 1 0-3.6 0'/>\n    </svg>\n    ";
     };
 
     GearLab.prototype.loadBoard = function() {
@@ -2760,6 +2786,9 @@
     GearLab.prototype.handlePenDown = function(x, y) {
       var button, gear, point, selection, _ref;
       point = new Point(x, y);
+      if ((this.pointerIcons != null ? this.pointerIcons.handGrab : void 0) != null) {
+        this.pointerImage = this.pointerIcons.handGrab;
+      }
       if (this.isPenDown) {
         return this.handlePenUp();
       } else {
@@ -2838,6 +2867,9 @@
 
     GearLab.prototype.handlePenUp = function() {
       var pendingEditor;
+      if ((this.pointerIcons != null ? this.pointerIcons.hand : void 0) != null) {
+        this.pointerImage = this.pointerIcons.hand;
+      }
       if (this.isPenDown) {
         pendingEditor = this.pendingGearEditor;
         if (this.currentAction === Action.SETTING_MOMENTUM) {
@@ -3590,6 +3622,9 @@
       this.currentDemoMovement = 0;
       this.movementCompletion = 0;
       this.isDemoPlaying = true;
+      if ((this.pointerIcons != null ? this.pointerIcons.hand : void 0) != null) {
+        this.pointerImage = this.pointerIcons.hand;
+      }
       return this.displayMessage("click anywhere to stop the demo");
     };
 
@@ -3600,6 +3635,9 @@
       this.selectedGear = null;
       this.selectedIcon = "gearIcon";
       this.board.restoreAfterDemo(this.boardBackup);
+      if ((this.pointerIcons != null ? this.pointerIcons.hand : void 0) != null) {
+        this.pointerImage = this.pointerIcons.hand;
+      }
       return this.clearMessage();
     };
 
