@@ -2480,11 +2480,11 @@
         if (parent.location.hash.length > 1) {
           try {
             hash = parent.location.hash.substr(1);
-            boardJSON = Util.sendGetRequest("boards/" + hash + ".txt");
+            boardJSON = Util.sendGetRequest("escenes/" + hash + ".txt");
             return Board.fromObject(JSON.parse(boardJSON));
           } catch (_error) {
             error = _error;
-            this.displayMessage("Error: could not load board", "red", 2000);
+            this.displayMessage("Error: could not load escena", "red", 2000);
             return new Board();
           }
         } else {
@@ -3570,7 +3570,7 @@
       this.isPlaying = false;
       parent.location.hash = "";
       this.board.clear();
-      return this.displayMessage("S'ha creat un board en blanc", "black", 3000);
+      return this.displayMessage("S'ha creat una escena en blanc", "black", 3000);
     };
 
     GearLab.prototype.toggleDemoPlayback = function() {
@@ -3605,7 +3605,7 @@
 
     GearLab.prototype.boardUploaded = function(event) {
       parent.location.hash = event.target.responseText.trim();
-      return this.displayMessage("Board saved. Share it by copying the text in your address bar.", "black", 4000);
+      return this.displayMessage("Escena desada. Comparteix-la copiant el text de la barra d'adreces.", "black", 4000);
     };
 
     GearLab.prototype.uploadBoard = function() {
@@ -3615,10 +3615,10 @@
     GearLab.prototype.setupBoardIO = function() {
       var demoButton, fileInput, importButton, newButton, playButton, saveButton,
         _this = this;
-      saveButton = document.getElementById("download-board");
-      importButton = document.getElementById("import-board");
-      fileInput = document.getElementById("board-file-input");
-      newButton = document.getElementById("new-board");
+      saveButton = document.getElementById("download-escena");
+      importButton = document.getElementById("import-escena");
+      fileInput = document.getElementById("escena-file-input");
+      newButton = document.getElementById("new-escena");
       playButton = document.getElementById("start-simulation");
       demoButton = document.getElementById("start-demo");
       if (!(saveButton && importButton && fileInput && newButton && playButton && demoButton)) {
@@ -3683,7 +3683,7 @@
           _this.stopDemo();
         }
         _this.replaceBoard(boardObject);
-        return _this.displayMessage("Board carregada correctament", "black", 3000);
+        return _this.displayMessage("Escena carregada correctament", "black", 3000);
       })["catch"](function(error) {
         console.error(error);
         return _this.displayMessage("No s'ha pogut carregar el fitxer", "red", 4000);
@@ -3697,7 +3697,7 @@
         reader = new FileReader();
         reader.onload = function(loadEvent) {
           var password;
-          password = window.prompt("Introdueix la contrasenya utilitzada per desar el board:");
+          password = window.prompt("Introdueix la contrasenya utilitzada per desar l'escena:");
           if (password === null) {
             return reject(new Error("Import cancelled"));
           }
@@ -3726,7 +3726,7 @@
         return;
       }
       if (password.length === 0) {
-        this.displayMessage("Cal una contrasenya per desar el board", "red", 3000);
+        this.displayMessage("Cal una contrasenya per desar l'escena", "red", 3000);
         return;
       }
       return this.encryptBoardData(boardJSON, password).then(function(buffer) {
@@ -3736,14 +3736,14 @@
         });
         link = document.createElement("a");
         link.href = window.URL.createObjectURL(blob);
-        link.download = "gearlab-board.glb";
+        link.download = "gearlab-escena.glb";
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        return _this.displayMessage("Board descarregat correctament", "black", 3000);
+        return _this.displayMessage("Escena descarregada correctament", "black", 3000);
       })["catch"](function(error) {
         console.error(error);
-        return _this.displayMessage("No s'ha pogut desar el board", "red", 4000);
+        return _this.displayMessage("No s'ha pogut desar l'escena", "red", 4000);
       });
     };
 

@@ -118,10 +118,10 @@ class GearLab
       if parent.location.hash.length > 1
         try
           hash = parent.location.hash.substr(1)
-          boardJSON = Util.sendGetRequest("boards/#{hash}.txt")
+          boardJSON = Util.sendGetRequest("escenes/#{hash}.txt")
           Board.fromObject(JSON.parse(boardJSON))
         catch error
-          @displayMessage("Error: could not load board", "red", 2000)
+          @displayMessage("Error: could not load escena", "red", 2000)
           new Board()
       else
         new Board()
@@ -180,7 +180,7 @@ class GearLab
           if @board.getGearList().every((g) -> g.momentum is 0)
             @displayMessage("Add some arrows!", "black", 2000)
         else if button.name is "clearButton"
-          # remove hash from url and clear board
+          # remove hash from url and clear escena
           parent.location.hash = ""
           @board.clear()
         else if button.name is "cloudButton"
@@ -822,10 +822,10 @@ class GearLab
 
   boardUploaded: (event) ->
     parent.location.hash = event.target.responseText.trim()
-    @displayMessage("Board saved. Share it by copying the text in your address bar.", "black", 4000)
+    @displayMessage("Escena desada. Comparteix-la copiant el text de la barra d'adreces.", "black", 4000)
 
   uploadBoard: ->
     boardJSON = JSON.stringify(@board)
-    Util.sendPostRequest(boardJSON, "upload_board.php", ((event) => @boardUploaded(event)))
+    Util.sendPostRequest(boardJSON, "upload_escena.php", ((event) => @boardUploaded(event)))
 
 window.gearlab.GearLab = GearLab
