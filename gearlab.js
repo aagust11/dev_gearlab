@@ -3691,19 +3691,17 @@
     };
 
     GearLab.prototype.readBoardFile = function(file) {
-      var _this = this;
+      var password,
+        _this = this;
       return new Promise(function(resolve, reject) {
         var reader;
+        password = window.GEARLAB_ENCRYPTION_PASSWORD;
+        if (!password) {
+          reject(new Error("Encryption password not configured"));
+          return;
+        }
         reader = new FileReader();
         reader.onload = function(loadEvent) {
-          var password;
-          password = window.prompt("Introdueix la contrasenya utilitzada per desar l'escena:");
-          if (password === null) {
-            return reject(new Error("Import cancelled"));
-          }
-          if (password.length === 0) {
-            return reject(new Error("Empty password"));
-          }
           return _this.decryptBoardData(loadEvent.target.result, password).then(function(decoded) {
             return resolve(decoded);
           })["catch"](function(error) {
@@ -3718,16 +3716,25 @@
     };
 
     GearLab.prototype.downloadBoard = function() {
-      var boardJSON, password,
+      var boardJSON, fileName, password,
         _this = this;
       boardJSON = JSON.stringify(this.board);
-      password = window.prompt("Introdueix una contrasenya per protegir el fitxer:");
-      if (password === null) {
+      password = window.GEARLAB_ENCRYPTION_PASSWORD;
+      if (!password) {
+        this.displayMessage("No s'ha trobat la contrasenya d'encriptació", "red", 4000);
         return;
       }
-      if (password.length === 0) {
-        this.displayMessage("Cal una contrasenya per desar l'escena", "red", 3000);
+      fileName = window.prompt("Introdueix el nom del fitxer:");
+      if (fileName === null) {
         return;
+      }
+      fileName = fileName.trim();
+      if (fileName.length === 0) {
+        this.displayMessage("Cal un nom de fitxer per desar l'escena", "red", 3000);
+        return;
+      }
+      if (!/\.glab$/i.test(fileName)) {
+        fileName += ".glab";
       }
       return this.encryptBoardData(boardJSON, password).then(function(buffer) {
         var blob, link;
@@ -3736,7 +3743,7 @@
         });
         link = document.createElement("a");
         link.href = window.URL.createObjectURL(blob);
-        link.download = "gearlab-escena.glb";
+        link.download = fileName;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
