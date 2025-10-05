@@ -216,32 +216,86 @@ Demo hand icon by momentum (http://momentumdesignlab.com/)
             padding: 18px 16px;
             color: #1f2937;
             background: rgba(148, 163, 184, 0.18);
+            flex-shrink: 0;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            max-height: 120px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .site-footer.collapsed {
+            max-height: 64px;
+            padding: 8px 16px;
         }
 
         .footer-inner {
-            max-width: 960px;
-            margin: 0 auto;
+            width: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 12px;
+            justify-content: flex-start;
+            position: relative;
+            white-space: nowrap;
+            gap: 0;
         }
 
-        .footer-meta {
-            display: flex;
+        .footer-content {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            gap: 3cm;
-            flex-wrap: wrap;
+            white-space: nowrap;
+            gap: 0;
+            overflow: hidden;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            max-height: 60px;
+            flex: 1 1 auto;
+        }
+
+        .site-footer.collapsed .footer-content {
+            opacity: 0;
+            max-height: 0;
+            pointer-events: none;
+            flex-basis: 0;
+            width: 0;
+        }
+
+        .footer-license {
+            flex: 0 0 auto;
         }
 
         .footer-icons {
             display: inline-flex;
-            gap: 8px;
+            align-items: center;
+            gap: 0;
+            margin-left: 2cm;
         }
 
         .footer-icons img {
-            height: 24px;
+            height: 14.4px;
+        }
+
+        .footer-version {
+            margin-left: 4cm;
+            flex: 0 0 auto;
+        }
+
+        .footer-toggle {
+            border: none;
+            background: rgba(15, 23, 42, 0.08);
+            color: #0f172a;
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease, color 0.2s ease;
+            margin-left: auto;
+        }
+
+        .footer-toggle:hover {
+            background: rgba(15, 23, 42, 0.16);
+            color: #0b1120;
         }
     </style>
 </head>
@@ -287,20 +341,42 @@ Demo hand icon by momentum (http://momentumdesignlab.com/)
                 </div>
             </div>
         </div>
-        <footer class="site-footer">
+        <footer class="site-footer" id="page-footer">
             <div class="wrap footer-inner">
-                <div data-i18n="footer.license" data-i18n-type="html">GearLab © 2025 per <a href="mailto:aagust11@xtec.cat">aagust11@xtec.cat</a> amb l'assistència de la IA està llicenciat sota <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</div>
-                <div class="footer-meta">
-                    <div data-i18n="footer.version">Versió 1 · Octubre 2025</div>
-                    <div class="footer-icons">
+                <div class="footer-content">
+                    <div class="footer-license" data-i18n="footer.license" data-i18n-type="html">GearLab © 2025 per <a href="mailto:aagust11@xtec.cat">aagust11@xtec.cat</a> amb l'assistència de la IA està llicenciat sota <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>.</div>
+                    <div class="footer-icons" aria-hidden="true">
                         <img src="https://mirrors.creativecommons.org/presskit/icons/cc.svg" alt="Creative Commons" />
                         <img src="https://mirrors.creativecommons.org/presskit/icons/by.svg" alt="Reconeixement" />
                         <img src="https://mirrors.creativecommons.org/presskit/icons/nc.svg" alt="No Comercial" />
                         <img src="https://mirrors.creativecommons.org/presskit/icons/sa.svg" alt="Compartir Igual" />
                     </div>
+                    <div class="footer-version" data-i18n="footer.version">Versió 1 · Octubre 2025</div>
                 </div>
+                <button type="button" class="footer-toggle" id="footer-toggle" aria-controls="page-footer" aria-expanded="true" title="Amaga el peu de pàgina">▼</button>
             </div>
         </footer>
     </div>
+    <script>
+        (function () {
+            const footer = document.getElementById('page-footer');
+            const toggle = document.getElementById('footer-toggle');
+
+            if (!footer || !toggle) {
+                return;
+            }
+
+            const updateToggleState = (collapsed) => {
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+                toggle.textContent = collapsed ? '▲' : '▼';
+                toggle.title = collapsed ? 'Mostra el peu de pàgina' : 'Amaga el peu de pàgina';
+            };
+
+            toggle.addEventListener('click', () => {
+                const collapsed = footer.classList.toggle('collapsed');
+                updateToggleState(collapsed);
+            });
+        })();
+    </script>
 </body>
 </html>
