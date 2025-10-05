@@ -1,4 +1,4 @@
 (function() {
   "use strict";
-  window.GEARLAB_ENCRYPTION_PASSWORD = "gearlab-static-password-20240517";
+  window.GEARLAB_ENCRYPTION_PASSWORD = "al gearlab els engranatges giren dins el navegador v1_2025";
 })();
