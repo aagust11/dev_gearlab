@@ -1864,14 +1864,9 @@
     };
 
     Board.prototype.calculateRatio = function(turningObject1, turningObject2, connectionType) {
-      var isPulleyMode;
-      isPulleyMode = window.gearlab.currentTransmissionMode === "pulleys";
       if (connectionType === ConnectionType.AXIS) {
         return 1;
       } else if (connectionType === ConnectionType.MESHING) {
-        if (isPulleyMode) {
-          return turningObject1.getCircumference() / turningObject2.getCircumference();
-        }
         return -turningObject1.getCircumference() / turningObject2.getCircumference();
       } else if (connectionType === ConnectionType.CHAIN_OUTSIDE) {
         return -turningObject1.getCircumference() / turningObject2.getCircumference();
