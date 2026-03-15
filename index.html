@@ -326,6 +326,7 @@ Demo hand icons by Lucide (https://lucide.dev/)
                 <button id="download-escena" type="button">Descarregar escena</button>
                 <button id="start-simulation" type="button">Iniciar simulació</button>
                 <button id="start-demo" type="button">Iniciar demo</button>
+                <button id="toggle-transmission-mode" type="button">Mode: Engranatges</button>
             </nav>
             <input id="escena-file-input" type="file" accept=".glb,.gearlab,.json,.bin" hidden />
         </header>
@@ -333,7 +334,7 @@ Demo hand icons by Lucide (https://lucide.dev/)
             <canvas id="gearlab_canvas"></canvas>
             <div id="gear-editor" class="gear-editor hidden">
                 <div class="gear-editor-row">
-                    <label for="gear-editor-teeth">Nombre de dents</label>
+                    <label for="gear-editor-teeth" id="gear-editor-size-label">Nombre de dents</label>
                     <input id="gear-editor-teeth" type="number" min="8" />
                 </div>
                 <div class="gear-editor-row">
@@ -355,6 +356,9 @@ Demo hand icons by Lucide (https://lucide.dev/)
                     <span>Mode</span>
                     <label for="gear-editor-mode-driver"><input type="radio" name="gear-mode" id="gear-editor-mode-driver" value="driver" /> Motriu</label>
                     <label for="gear-editor-mode-driven"><input type="radio" name="gear-mode" id="gear-editor-mode-driven" value="driven" /> Conduïda</label>
+                </div>
+                <div class="gear-editor-row">
+                    <span id="gear-editor-formula">n₁ · z₁ = n₂ · z₂</span>
                 </div>
             </div>
         </div>
