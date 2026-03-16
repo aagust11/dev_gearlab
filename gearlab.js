@@ -743,7 +743,7 @@
   window.gearlab.model = {};
 
   Gear = (function() {
-    function Gear(location, rotation, numberOfTeeth, id, momentum, group, level, connections, rpm, direction, isDriver) {
+    function Gear(location, rotation, numberOfTeeth, id, momentum, group, level, connections, rpm, direction, isDriver, customPitchRadius) {
       this.location = location;
       this.rotation = rotation;
       this.numberOfTeeth = numberOfTeeth;
@@ -758,6 +758,7 @@
       this.direction = direction != null ? direction : (this.momentum >= 0 ? 1 : -1);
       this.rpm = rpm != null ? rpm : Math.abs(this.momentum) * 60 / (2 * Math.PI);
       this.isDriver = isDriver != null ? isDriver : this.momentum !== 0;
+      this.customPitchRadius = customPitchRadius != null ? customPitchRadius : null;
       this.updateDimensions();
       this.normalizeMotion();
     }
@@ -777,13 +778,23 @@
     };
 
     Gear.prototype.updateDimensions = function() {
-      this.pitchRadius = Util.MODULE * (0.5 * this.numberOfTeeth);
-      this.innerRadius = Util.MODULE * (0.5 * this.numberOfTeeth - 1.25);
-      return this.outerRadius = Util.MODULE * (0.5 * this.numberOfTeeth + 1);
+      if (this.customPitchRadius != null) {
+        this.pitchRadius = this.customPitchRadius;
+      } else {
+        this.pitchRadius = Util.MODULE * (0.5 * this.numberOfTeeth);
+      }
+      this.innerRadius = this.pitchRadius - 1.25 * Util.MODULE;
+      return this.outerRadius = this.pitchRadius + Util.MODULE;
     };
 
     Gear.prototype.setNumberOfTeeth = function(numberOfTeeth) {
       this.numberOfTeeth = numberOfTeeth;
+      this.customPitchRadius = null;
+      return this.updateDimensions();
+    };
+
+    Gear.prototype.setPitchDiameter = function(diameter) {
+      this.customPitchRadius = 0.5 * diameter;
       return this.updateDimensions();
     };
 
@@ -821,6 +832,7 @@
       this.rpm = gear.rpm;
       this.direction = gear.direction;
       this.isDriver = gear.isDriver;
+      this.customPitchRadius = gear.customPitchRadius != null ? gear.customPitchRadius : null;
       this.updateDimensions();
       this.group = gear.group;
       this.level = gear.level;
@@ -829,11 +841,11 @@
     };
 
     Gear.prototype.clone = function() {
-      return new Gear(this.location.clone(), this.rotation, this.numberOfTeeth, this.id, this.momentum, this.group, this.level, Util.clone(this.connections), this.rpm, this.direction, this.isDriver);
+      return new Gear(this.location.clone(), this.rotation, this.numberOfTeeth, this.id, this.momentum, this.group, this.level, Util.clone(this.connections), this.rpm, this.direction, this.isDriver, this.customPitchRadius);
     };
 
     Gear.fromObject = function(obj) {
-      return new Gear(Point.fromObject(obj.location), obj.rotation, obj.numberOfTeeth, obj.id, obj.momentum, obj.group, obj.level, obj.connections, obj.rpm, obj.direction, obj.isDriver);
+      return new Gear(Point.fromObject(obj.location), obj.rotation, obj.numberOfTeeth, obj.id, obj.momentum, obj.group, obj.level, obj.connections, obj.rpm, obj.direction, obj.isDriver, obj.customPitchRadius);
     };
 
     return Gear;
@@ -2635,6 +2647,7 @@
       minValue = this.getMinimumSizeValue();
       if (this.gearEditorInputs.teeth) {
         this.gearEditorInputs.teeth.min = minValue;
+        this.gearEditorInputs.teeth.step = this.isPulleyMode() ? "any" : "1";
       }
       if (this.activeEditorGear) {
         return this.refreshGearEditor();
@@ -2714,7 +2727,7 @@
       if (!(this.activeEditorGear && this.gearEditorInputs.teeth)) {
         return;
       }
-      this.gearEditorInputs.teeth.value = this.isPulleyMode() ? Math.round(2 * this.activeEditorGear.pitchRadius) : Math.round(this.activeEditorGear.numberOfTeeth);
+      this.gearEditorInputs.teeth.value = this.isPulleyMode() ? (2 * this.activeEditorGear.pitchRadius).toFixed(2).replace(/\.00$/, "") : Math.round(this.activeEditorGear.numberOfTeeth);
       if (this.gearEditorInputs.rpm) {
         this.gearEditorInputs.rpm.value = this.formatRpm(this.activeEditorGear.rpm);
       }
@@ -2744,7 +2757,8 @@
         this.gearEditorInputs.rpm.value = this.formatRpm(this.activeEditorGear.rpm);
       }
       if (this.gearEditorInputs.teeth) {
-        return this.gearEditorInputs.teeth.min = this.getMinimumSizeValue();
+        this.gearEditorInputs.teeth.min = this.getMinimumSizeValue();
+        return this.gearEditorInputs.teeth.step = this.isPulleyMode() ? "any" : "1";
       }
     };
 
@@ -2763,7 +2777,7 @@
       if (!(gear && this.gearEditorInputs.teeth)) {
         return;
       }
-      newValue = parseInt(this.gearEditorInputs.teeth.value, 10);
+      newValue = parseFloat(this.gearEditorInputs.teeth.value);
       if (isNaN(newValue)) {
         newValue = this.getMinimumSizeValue();
       }
@@ -2774,10 +2788,13 @@
         diameter = newValue;
         targetTeeth = Math.max(MIN_GEAR_TEETH, Math.round(diameter / Util.MODULE));
       } else {
-        targetTeeth = newValue;
+        targetTeeth = Math.round(newValue);
       }
-      this.gearEditorInputs.teeth.value = this.isPulleyMode() ? Math.round(targetTeeth * Util.MODULE) : targetTeeth;
-      if (targetTeeth !== gear.numberOfTeeth) {
+      this.gearEditorInputs.teeth.value = this.isPulleyMode() ? diameter.toFixed(2).replace(/\.00$/, "") : targetTeeth;
+      if (this.isPulleyMode()) {
+        gear.setPitchDiameter(diameter);
+        this.board.recalculateGearSpeeds();
+      } else if (targetTeeth !== gear.numberOfTeeth) {
         gear.setNumberOfTeeth(targetTeeth);
         if (!(targetTeeth in this.gearImages)) {
           this.addGearImage(gear);
